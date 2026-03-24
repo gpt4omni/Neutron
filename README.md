@@ -12,6 +12,7 @@ Neutron is a modular Luau static-site renderer for Roblox. It parses HTML, resol
 - `src/Neutron/StyleResolver.luau`: computed styles
 - `src/Neutron/LayoutEngine.luau`: block tree generation
 - `src/Neutron/Renderer.luau`: Roblox GUI rendering
+- `release/Neutron.module.lua`: single-file Studio distribution
 
 ## Usage
 
@@ -23,7 +24,9 @@ local Players = game:GetService("Players")
 local Neutron = require(ReplicatedStorage.Neutron)
 
 local fetcher = Neutron.Fetcher.new(HttpService, {
-	proxyTemplate = "https://r.jina.ai/http://{url}",
+	transformUrl = function(url)
+		return "https://r.jina.ai/http://" .. url:gsub("^https?://", "")
+	end,
 })
 
 local renderer = Neutron.new({
@@ -39,6 +42,10 @@ mount.Parent = screenGui
 
 renderer:renderUrl("https://example.com", mount)
 ```
+
+## Studio Release
+
+Use `release/Neutron.module.lua` as the importable file. Create a `ModuleScript` named `Neutron` in Studio, paste the contents of that file into it, and require it directly.
 
 ## Supported Features
 
