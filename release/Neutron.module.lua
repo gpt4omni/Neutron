@@ -1155,7 +1155,7 @@ define("Fetcher", function(loadModule)
 	function Fetcher.createRemoteHandler(httpService, options)
 		local fetcher = Fetcher.new(httpService, options)
 
-		return function(url)
+		return function(_, url)
 			return fetcher:fetch(url)
 		end
 	end
@@ -1193,7 +1193,8 @@ define("Fetcher", function(loadModule)
 
 		assert(self.httpService, "Fetcher:fetch requires HttpService or a RemoteFunction bridge")
 		local resolvedUrl = self:resolve(url)
-		return self.httpService:GetAsync(resolvedUrl, false, self.headers)
+		local headers = next(self.headers) ~= nil and self.headers or nil
+		return self.httpService:GetAsync(resolvedUrl, false, headers)
 	end
 
 	function Fetcher:fetchRelative(baseUrl, path)
@@ -1213,6 +1214,44 @@ define("Neutron", function(loadModule)
 	local Neutron = {}
 	Neutron.__index = Neutron
 
+	local function escapeHtml(value)
+		return value
+			:gsub("&", "&amp;")
+			:gsub("<", "&lt;")
+			:gsub(">", "&gt;")
+			:gsub("\"", "&quot;")
+			:gsub("'", "&apos;")
+	end
+
+	local function containsHtmlMarkup(value)
+		return value:find("<%s*[%a!/]", 1) ~= nil
+	end
+
+	local function wrapPlainTextAsHtml(value)
+		local normalized = value:gsub("\r\n", "\n")
+		local blocks = {}
+
+		for line in normalized:gmatch("[^\n]+") do
+			if line:match("%S") then
+				table.insert(blocks, "<p>" .. escapeHtml(line) .. "</p>")
+			end
+		end
+
+		if #blocks == 0 then
+			table.insert(blocks, "<p></p>")
+		end
+
+		return "<html><body>" .. table.concat(blocks, "") .. "</body></html>"
+	end
+
+	local function normalizeDocumentSource(html)
+		if containsHtmlMarkup(html) then
+			return html
+		end
+
+		return wrapPlainTextAsHtml(html)
+	end
+
 	function Neutron.new(options)
 		local self = setmetatable({}, Neutron)
 		self.fetcher = options and options.fetcher
@@ -1221,7 +1260,7 @@ define("Neutron", function(loadModule)
 	end
 
 	function Neutron:renderHtml(html, mount, options)
-		local parsed = HtmlParser.parse(html)
+		local parsed = HtmlParser.parse(normalizeDocumentSource(html))
 		local computed = StyleResolver.resolve(parsed)
 		local layoutTree = LayoutEngine.build(computed)
 		local rendererOptions = {}

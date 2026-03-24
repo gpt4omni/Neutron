@@ -42,7 +42,7 @@ end
 function Fetcher.createRemoteHandler(httpService, options)
 	local fetcher = Fetcher.new(httpService, options)
 
-	return function(url)
+	return function(_, url)
 		return fetcher:fetch(url)
 	end
 end
@@ -80,7 +80,8 @@ function Fetcher:fetch(url)
 
 	assert(self.httpService, "Fetcher:fetch requires HttpService or a RemoteFunction bridge")
 	local resolvedUrl = self:resolve(url)
-	return self.httpService:GetAsync(resolvedUrl, false, self.headers)
+	local headers = next(self.headers) ~= nil and self.headers or nil
+	return self.httpService:GetAsync(resolvedUrl, false, headers)
 end
 
 function Fetcher:fetchRelative(baseUrl, path)
