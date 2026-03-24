@@ -32,10 +32,7 @@ local function applyRichTextStyle(text, style)
 	end
 
 	local color = style.color or "#111111"
-	local face = style["font-family"] or "Gotham"
-	local size = style["font-size"] or 16
-
-	return string.format('<font color="%s" face="%s" size="%s">%s</font>', color, face, tostring(size), buffer)
+	return string.format('<font color="%s">%s</font>', color, buffer)
 end
 
 local function isBlock(node)

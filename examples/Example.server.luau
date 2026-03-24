@@ -7,8 +7,21 @@ local remoteFunction = Instance.new("RemoteFunction")
 remoteFunction.Name = "NeutronFetch"
 remoteFunction.Parent = ReplicatedStorage
 
-Neutron.Fetcher.bindRemoteFunction(remoteFunction, HttpService, {
+local directFetcher = Neutron.Fetcher.new(HttpService)
+local proxyFetcher = Neutron.Fetcher.new(HttpService, {
 	transformUrl = function(url)
 		return "https://r.jina.ai/http://" .. url:gsub("^https?://", "")
 	end,
 })
+
+remoteFunction.OnServerInvoke = function(_, url)
+	local ok, result = pcall(function()
+		return directFetcher:fetch(url)
+	end)
+
+	if ok then
+		return result
+	end
+
+	return proxyFetcher:fetch(url)
+end

@@ -3,10 +3,22 @@ local Url = require(script.Parent.Url)
 local Renderer = {}
 Renderer.__index = Renderer
 
+local function firstFontFamily(value)
+	if type(value) ~= "string" then
+		return ""
+	end
+
+	local family = value:match("^[^,]+") or value
+	return family:gsub("^%s+", ""):gsub("%s+$", ""):gsub("^['\"]", ""):gsub("['\"]$", "")
+end
+
 local function pickFont(style)
-	local family = string.lower(style["font-family"] or "")
+	local family = string.lower(firstFontFamily(style["font-family"]))
 	if family:find("mono") then
 		return Enum.Font.Code
+	end
+	if family:find("serif") then
+		return Enum.Font.SourceSans
 	end
 	if style["font-weight"] == "bold" then
 		return Enum.Font.GothamBold
@@ -25,6 +37,15 @@ local function toColor3(value)
 
 	if value == "transparent" then
 		return Color3.fromRGB(255, 255, 255)
+	end
+
+	local shortRed, shortGreen, shortBlue = value:match("^#(%x)(%x)(%x)$")
+	if shortRed and shortGreen and shortBlue then
+		return Color3.fromRGB(
+			parseHexChannel(shortRed .. shortRed),
+			parseHexChannel(shortGreen .. shortGreen),
+			parseHexChannel(shortBlue .. shortBlue)
+		)
 	end
 
 	local red, green, blue = value:match("^#(%x%x)(%x%x)(%x%x)$")
@@ -56,6 +77,25 @@ local function addPadding(instance, style)
 	return padding
 end
 
+local function resolveViewportValue(value, axis)
+	if type(value) == "number" then
+		return value
+	end
+
+	if type(value) == "table" then
+		local camera = workspace.CurrentCamera
+		local viewport = camera and camera.ViewportSize or Vector2.new(1280, 720)
+		if value.unit == "vw" then
+			return math.floor(viewport.X * value.value / 100 + 0.5)
+		end
+		if value.unit == "vh" then
+			return math.floor(viewport.Y * value.value / 100 + 0.5)
+		end
+	end
+
+	return axis == "x" and 0 or 0
+end
+
 local function createWrapper(parent, style)
 	local wrapper = Instance.new("Frame")
 	wrapper.Name = "Block"
@@ -75,6 +115,18 @@ local function createWrapper(parent, style)
 	return wrapper
 end
 
+local function addCorner(instance, style)
+	local radius = style["border-radius"] or 0
+	if radius <= 0 then
+		return nil
+	end
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius)
+	corner.Parent = instance
+	return corner
+end
+
 function Renderer.new(options)
 	return setmetatable({
 		imageResolver = options and options.imageResolver,
@@ -92,6 +144,8 @@ function Renderer:createRoot(mount)
 	scrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	scrollingFrame.ScrollBarThickness = 8
 	scrollingFrame.Parent = mount
+	mount.BackgroundColor3 = scrollingFrame.BackgroundColor3
+	mount.BackgroundTransparency = 0
 
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Vertical
@@ -164,9 +218,21 @@ function Renderer:renderContainer(parent, block)
 	container.BackgroundColor3 = toColor3(block.style["background-color"])
 	container.BackgroundTransparency = block.style["background-color"] == "transparent" and 1 or 0
 	container.BorderSizePixel = 0
-	container.Size = UDim2.new(1, 0, 0, 0)
 	container.AutomaticSize = Enum.AutomaticSize.Y
 	container.Parent = wrapper
+	addCorner(container, block.style)
+
+	local width = block.style.width
+	if type(width) == "number" and width > 0 then
+		container.Size = UDim2.new(0, width, 0, 0)
+	else
+		container.Size = UDim2.new(1, 0, 0, 0)
+	end
+
+	if block.style["margin-left"] == "auto" and block.style["margin-right"] == "auto" and type(width) == "number" and width > 0 then
+		container.AnchorPoint = Vector2.new(0.5, 0)
+		container.Position = UDim2.new(0.5, 0, 0, 0)
+	end
 
 	addPadding(container, block.style)
 
@@ -195,9 +261,42 @@ end
 function Renderer:render(mount, tree)
 	local root = self:createRoot(mount)
 	root.BackgroundColor3 = toColor3(tree.style["background-color"])
+	root.BackgroundTransparency = tree.style["background-color"] == "transparent" and 1 or 0
+
+	local bodyHost = Instance.new("Frame")
+	bodyHost.Name = "Body"
+	bodyHost.BackgroundTransparency = 1
+	bodyHost.BorderSizePixel = 0
+	bodyHost.AutomaticSize = Enum.AutomaticSize.Y
+	bodyHost.Parent = root
+
+	local topMargin = resolveViewportValue(tree.style["margin-top"], "y")
+	local width = tree.style.width
+	if type(width) == "table" then
+		width = resolveViewportValue(width, "x")
+	end
+
+	if type(width) == "number" and width > 0 then
+		bodyHost.Size = UDim2.new(0, width, 0, 0)
+	else
+		bodyHost.Size = UDim2.new(1, 0, 0, 0)
+	end
+
+	local bodyPadding = Instance.new("UIPadding")
+	bodyPadding.PaddingTop = UDim.new(0, topMargin)
+	bodyPadding.PaddingLeft = UDim.new(0, tree.style["padding-left"] or 0)
+	bodyPadding.PaddingRight = UDim.new(0, tree.style["padding-right"] or 0)
+	bodyPadding.PaddingBottom = UDim.new(0, tree.style["padding-bottom"] or 0)
+	bodyPadding.Parent = bodyHost
+
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Vertical
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = bodyHost
 
 	for _, child in ipairs(tree.children) do
-		self:renderBlock(root, child)
+		self:renderBlock(bodyHost, child)
 	end
 
 	return root

@@ -8,6 +8,7 @@ local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "NeutronDemo"
 screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
 local mount = Instance.new("Frame")
