@@ -7,13 +7,54 @@ local function interpolate(template, url, encodedUrl)
 	return template:gsub("{url_encoded}", encodedUrl):gsub("{url}", url)
 end
 
+local function createFetcher(state)
+	return setmetatable(state, Fetcher)
+end
+
 function Fetcher.new(httpService, options)
-	return setmetatable({
+	assert(httpService, "Fetcher.new requires HttpService")
+
+	options = options or {}
+
+	return createFetcher({
 		httpService = httpService,
-		proxyTemplate = options and options.proxyTemplate,
-		headers = options and options.headers or {},
-		transformUrl = options and options.transformUrl,
-	}, Fetcher)
+		proxyTemplate = options.proxyTemplate,
+		headers = options.headers or {},
+		transformUrl = options.transformUrl,
+		remoteFunction = nil,
+	})
+end
+
+function Fetcher.fromRemoteFunction(remoteFunction, options)
+	assert(remoteFunction, "Fetcher.fromRemoteFunction requires a RemoteFunction")
+
+	options = options or {}
+
+	return createFetcher({
+		httpService = nil,
+		proxyTemplate = options.proxyTemplate,
+		headers = options.headers or {},
+		transformUrl = options.transformUrl,
+		remoteFunction = remoteFunction,
+	})
+end
+
+function Fetcher.createRemoteHandler(httpService, options)
+	local fetcher = Fetcher.new(httpService, options)
+
+	return function(url)
+		return fetcher:fetch(url)
+	end
+end
+
+function Fetcher.bindRemoteFunction(remoteFunction, httpService, options)
+	assert(remoteFunction, "Fetcher.bindRemoteFunction requires a RemoteFunction")
+	remoteFunction.OnServerInvoke = Fetcher.createRemoteHandler(httpService, options)
+	return remoteFunction
+end
+
+function Fetcher.isRemote(self)
+	return self.remoteFunction ~= nil
 end
 
 function Fetcher:resolve(url)
@@ -22,13 +63,22 @@ function Fetcher:resolve(url)
 	end
 
 	if self.proxyTemplate then
-		return interpolate(self.proxyTemplate, url, self.httpService:UrlEncode(url))
+		if self.httpService then
+			return interpolate(self.proxyTemplate, url, self.httpService:UrlEncode(url))
+		end
+		return interpolate(self.proxyTemplate, url, url)
 	end
 
 	return url
 end
 
 function Fetcher:fetch(url)
+	if self.remoteFunction then
+		local resolvedUrl = self:resolve(url)
+		return self.remoteFunction:InvokeServer(resolvedUrl)
+	end
+
+	assert(self.httpService, "Fetcher:fetch requires HttpService or a RemoteFunction bridge")
 	local resolvedUrl = self:resolve(url)
 	return self.httpService:GetAsync(resolvedUrl, false, self.headers)
 end

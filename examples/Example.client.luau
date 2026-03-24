@@ -1,8 +1,8 @@
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Neutron = require(ReplicatedStorage.Neutron)
+local remoteFunction = ReplicatedStorage:WaitForChild("NeutronFetch")
 
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
@@ -16,11 +16,7 @@ mount.BackgroundTransparency = 1
 mount.Size = UDim2.fromScale(1, 1)
 mount.Parent = screenGui
 
-local fetcher = Neutron.Fetcher.new(HttpService, {
-	transformUrl = function(url)
-		return "https://r.jina.ai/http://" .. url:gsub("^https?://", "")
-	end,
-})
+local fetcher = Neutron.Fetcher.fromRemoteFunction(remoteFunction)
 
 local renderer = Neutron.new({
 	fetcher = fetcher,

@@ -13,6 +13,8 @@ Neutron is a modular Luau static-site renderer for Roblox. It parses HTML, resol
 - `src/Neutron/LayoutEngine.luau`: block tree generation
 - `src/Neutron/Renderer.luau`: Roblox GUI rendering
 - `release/Neutron.module.lua`: single-file Studio distribution
+- `examples/Example.server.luau`: server HTTP bridge setup
+- `examples/Example.client.luau`: client rendering example
 
 ## Usage
 
@@ -22,16 +24,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local Neutron = require(ReplicatedStorage.Neutron)
+local remoteFunction = Instance.new("RemoteFunction")
+remoteFunction.Name = "NeutronFetch"
+remoteFunction.Parent = ReplicatedStorage
 
-local fetcher = Neutron.Fetcher.new(HttpService, {
+Neutron.Fetcher.bindRemoteFunction(remoteFunction, HttpService, {
 	transformUrl = function(url)
 		return "https://r.jina.ai/http://" .. url:gsub("^https?://", "")
 	end,
 })
 
-local renderer = Neutron.new({
-	fetcher = fetcher,
-})
+local renderer = Neutron.new({ fetcher = Neutron.Fetcher.fromRemoteFunction(remoteFunction) })
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -42,6 +45,13 @@ mount.Parent = screenGui
 
 renderer:renderUrl("https://example.com", mount)
 ```
+
+## Client And Server
+
+- `renderHtml()` works on both client and server because it only parses and renders text you already have
+- `renderUrl()` requires a fetcher
+- Roblox HTTP requests only run on the server, so a `LocalScript` should use `Fetcher.fromRemoteFunction()`
+- `Fetcher.bindRemoteFunction()` wires a server `RemoteFunction` to a normal HTTP fetcher
 
 ## Studio Release
 
@@ -60,6 +70,8 @@ Use `release/Neutron.module.lua` as the importable file. Create a `ModuleScript`
 
 - `proxyTemplate` supports both `{url}` and `{url_encoded}`
 - `transformUrl` lets you provide your own URL rewrite logic
+- `Fetcher.new(HttpService, options)` is for server-side HTTP
+- `Fetcher.fromRemoteFunction(remoteFunction, options)` is for client-side fetching through a server bridge
 
 ## Limits
 
