@@ -4,7 +4,7 @@
 
 **A modular Luau static-site renderer for Roblox.**
 
-Neutron parses HTML, resolves CSS, builds a layout tree, and renders the result directly into Roblox GUI objects — no browser engine required.
+Neutron parses HTML, resolves CSS, builds a layout tree, and renders the result directly into Roblox GUI objects no browser engine needed.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Lua](https://img.shields.io/badge/Lua-47.8%25-blue?logo=lua)
