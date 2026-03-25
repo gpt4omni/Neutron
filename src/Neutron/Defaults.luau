@@ -22,6 +22,7 @@ Defaults.blockTags = {
 	h6 = true,
 	pre = true,
 	blockquote = true,
+	form = true,
 }
 
 Defaults.voidTags = {
@@ -42,6 +43,8 @@ Defaults.inheritableProperties = {
 	["text-align"] = true,
 	["text-decoration"] = true,
 	["font-family"] = true,
+	["text-transform"] = true,
+	["list-style-type"] = true,
 }
 
 Defaults.namedColors = {
@@ -92,7 +95,13 @@ Defaults.userAgentStyles = {
 	div = {
 		display = "block",
 	},
+	form = {
+		display = "block",
+	},
 	span = {
+		display = "inline",
+	},
+	input = {
 		display = "inline",
 	},
 	p = {
@@ -131,10 +140,12 @@ Defaults.userAgentStyles = {
 	ul = {
 		display = "block",
 		["margin-bottom"] = 12,
+		["list-style-type"] = "disc",
 	},
 	ol = {
 		display = "block",
 		["margin-bottom"] = 12,
+		["list-style-type"] = "decimal",
 	},
 	li = {
 		display = "block",

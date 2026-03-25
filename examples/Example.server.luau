@@ -2,10 +2,15 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Neutron = require(ReplicatedStorage.Neutron)
+local imageBridgeUrl = "https://neutronbridgeapi.onrender.com/render"
 
-local remoteFunction = Instance.new("RemoteFunction")
+local remoteFunction = ReplicatedStorage:FindFirstChild("NeutronFetch") or Instance.new("RemoteFunction")
 remoteFunction.Name = "NeutronFetch"
 remoteFunction.Parent = ReplicatedStorage
+
+local imageRemoteFunction = ReplicatedStorage:FindFirstChild("NeutronImageFetch") or Instance.new("RemoteFunction")
+imageRemoteFunction.Name = "NeutronImageFetch"
+imageRemoteFunction.Parent = ReplicatedStorage
 
 local directFetcher = Neutron.Fetcher.new(HttpService)
 local proxyFetcher = Neutron.Fetcher.new(HttpService, {
@@ -25,3 +30,5 @@ remoteFunction.OnServerInvoke = function(_, url)
 
 	return proxyFetcher:fetch(url)
 end
+
+Neutron.ImagePipeline.bindBridgeRemoteFunction(imageRemoteFunction, HttpService, imageBridgeUrl)

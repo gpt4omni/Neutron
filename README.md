@@ -14,9 +14,13 @@ Neutron is a modular Luau static-site renderer for Roblox. It parses HTML, resol
 - `src/Neutron/StyleResolver.luau`: computed styles
 - `src/Neutron/LayoutEngine.luau`: block tree generation
 - `src/Neutron/Renderer.luau`: Roblox GUI rendering
+- `src/Neutron/ImageCompression.luau`: palette and RLE image compression
+- `src/Neutron/ImagePipeline.luau`: low-resolution image scheduling and caching
 - `release/Neutron.module.lua`: single-file Studio distribution
 - `examples/Example.server.luau`: server HTTP bridge setup
 - `examples/Example.client.luau`: client rendering example
+- `bridge_api/app.py`: external image bridge API
+- `bridge_api/requirements.txt`: Python API dependencies
 
 ## Usage
 
@@ -59,6 +63,22 @@ renderer:renderUrl("https://example.com", mount)
 
 Use `release/Neutron.module.lua` as the importable file. Create a `ModuleScript` named `Neutron` in Studio, paste the contents of that file into it, and require it directly.
 
+## External Image Bridge
+
+Static site images can be rendered through a dedicated image bridge API.
+
+Server setup:
+
+- create a `RemoteFunction` named `NeutronImageFetch`
+- host the Python service in `bridge_api/`
+- call `Neutron.ImagePipeline.bindBridgeRemoteFunction(remoteFunction, HttpService, bridgeUrl)`
+
+Client setup:
+
+- pass `imageRemoteFunction = ReplicatedStorage.NeutronImageFetch` in `rendererOptions`
+
+The bridge API returns Neutron-native `palette-rle` payloads, so external images use the same low-cost renderer as the local benchmark path.
+
 ## Supported Features
 
 - HTML text nodes and common structural tags
@@ -67,6 +87,8 @@ Use `release/Neutron.module.lua` as the importable file. Create a `ModuleScript`
 - Block layout with margins and padding
 - Text styling with Roblox RichText
 - Optional proxy-based fetching for public websites
+- Low-resolution image rendering without `EditableImage`
+- Palette-quantized image payloads with cache and frame budgeting
 
 ## Fetch Options
 
@@ -74,6 +96,24 @@ Use `release/Neutron.module.lua` as the importable file. Create a `ModuleScript`
 - `transformUrl` lets you provide your own URL rewrite logic
 - `Fetcher.new(HttpService, options)` is for server-side HTTP
 - `Fetcher.fromRemoteFunction(remoteFunction, options)` is for client-side fetching through a server bridge
+
+## Image Options
+
+- `imageMaxWidth` defaults to `128`
+- `imageMaxHeight` defaults to `72`
+- `imageMaxColors` defaults to `16`
+- `imageMaxPixelsPerFrame` defaults to `10000`
+- `imageMaxRunsPerFrame` defaults to `160`
+- `imagePixelScale` defaults to `2`
+- `imageFetchPayload` can provide quantized payloads on the client
+- `imageRemoteFunction` can provide quantized payloads from the server
+- `Neutron.ImagePipeline.bindBridgeRemoteFunction(remoteFunction, HttpService, bridgeUrl)` connects a server `RemoteFunction` to the Python bridge API
+
+## Image Limits
+
+- External web images still need a payload provider or server bridge that returns quantized image data
+- Roblox asset-backed images such as `rbxassetid://...` work without `EditableImage`
+- The image renderer prioritizes text and layout by spreading image work across frames
 
 ## Limits
 

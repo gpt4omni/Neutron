@@ -5,7 +5,7 @@ local function trim(value)
 end
 
 local function coerceValue(value)
-	value = trim(value)
+	value = trim(value:gsub("%s*!important%s*$", ""))
 
 	if value:find("%s") then
 		local parts = {}
@@ -25,6 +25,14 @@ local function coerceValue(value)
 		return {
 			unit = "em",
 			value = emNumber,
+		}
+	end
+
+	local percentNumber = tonumber(value:match("^([%d%.]+)%%$"))
+	if percentNumber then
+		return {
+			unit = "%",
+			value = percentNumber,
 		}
 	end
 
