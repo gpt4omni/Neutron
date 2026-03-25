@@ -26,7 +26,7 @@ local Players = game:GetService("Players")
 
 local Neutron = require(ReplicatedStorage.Neutron)
 
--- Set up the server-side fetch bridge
+-- Setup the fetch bridge
 local remoteFunction = Instance.new("RemoteFunction")
 remoteFunction.Name = "NeutronFetch"
 remoteFunction.Parent = ReplicatedStorage
@@ -37,7 +37,7 @@ Neutron.Fetcher.bindRemoteFunction(remoteFunction, HttpService, {
     end,
 })
 
--- Render a URL into a GUI frame
+-- Render the URL into a GUI frame.
 local renderer = Neutron.new({
     fetcher = Neutron.Fetcher.fromRemoteFunction(remoteFunction)
 })
@@ -91,7 +91,7 @@ renderer:renderUrl("https://example.com", mount)
 - Block layout with margins and padding
 - Text styling via Roblox RichText
 - Optional proxy-based fetching for public websites
-- Low-resolution image rendering *(no `EditableImage` required)*
+- Low-resolution image rendering *(no `EditableImage` required which requires ID.)*
 - Palette-quantized image payloads with caching and frame budgeting
 
 ---
