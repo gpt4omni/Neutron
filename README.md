@@ -1,5 +1,7 @@
 # Neutron
 
+NOTE: We are not responsible for what roblox does to you for using this tool, by using this tool you understand these risks.
+
 Neutron is a modular Luau static-site renderer for Roblox. It parses HTML, resolves a small CSS subset, builds a simple layout tree, and renders the result into Roblox GUI objects.
 
 ## Structure
