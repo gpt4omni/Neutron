@@ -56,8 +56,6 @@ renderer:renderUrl("https://example.com", mount)
 
 ## Studio Setup
 
-No package manager needed.
-
 1. Open `release/Neutron.module.lua`
 2. Create a `ModuleScript` named `Neutron` in Studio
 3. Paste the contents in and `require()` it
